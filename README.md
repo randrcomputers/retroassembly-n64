@@ -41,12 +41,21 @@ The N64 display is shown in a centered **4:3** layout instead of being stretched
 ### RetroAssembly UI integration
 The RetroAssembly overlay and ESC menu work correctly with N64 gameplay.
 
+## ROM Format
+
+Nintendo 64 ROMs should be provided as **unzipped `.z64` files**.
+
+- Supported format: `.z64`
+- ROMs should be **extracted / unzipped** before use
+- Do **not** load zipped ROM archives directly
+
 ## Working Behavior
 
 Current working behavior includes:
 
 - Nintendo 64 appears as a supported platform
 - N64 games launch correctly
+- ROMs load correctly when provided as unzipped `.z64` files
 - The RetroAssembly ESC menu opens correctly
 - Save states work
 - Load states work
