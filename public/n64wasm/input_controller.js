@@ -388,71 +388,115 @@ class InputController {
 
     processGamepad() {
         try {
-            var gamepads = navigator.getGamepads ? navigator.getGamepads() : (navigator.webkitGetGamepads ? navigator.webkitGetGamepads : []);
+            var gamepads = navigator.getGamepads ? navigator.getGamepads() : (navigator.webkitGetGamepads ? navigator.webkitGetGamepads() : []);
             if (!gamepads)
                 return;
             var gp = null;
             for (let i = 0; i < gamepads.length; i++) {
-                if (gamepads[i] && gamepads[i].buttons.length > 0)
+                if (gamepads[i] && gamepads[i].buttons && gamepads[i].buttons.length > 0) {
                     gp = gamepads[i];
+                    break;
+                }
             }
-            if (gp) {
-                for (let i = 0; i < gp.buttons.length; i++) {
-                    if (this.DebugKeycodes) {
-                        if (gp.buttons[i].pressed)
-                            console.log(i);
+            if (!gp)
+                return;
+
+            const isPressed = (btnIndex) => {
+                return btnIndex != null && btnIndex >= 0 && gp.buttons[btnIndex] && gp.buttons[btnIndex].pressed;
+            };
+
+            const syncButton = (pressed, stateName, mappingKey) => {
+                const mappedKey = this.KeyMappings[mappingKey];
+                if (!mappedKey)
+                    return;
+                if (pressed) {
+                    if (!this[stateName]) {
+                        this.sendKeyDownEvent(mappedKey);
                     }
-                    if (gp.buttons[i].pressed)
-                        this.Joy_Last = i;
                 }
-                //process axes
-                if (this.Gamepad_Process_Axis) {
-                    try {
-                        let horiz_axis = gp.axes[0];
-                        let vertical_axis = gp.axes[1];
-                        if (horiz_axis < -.5) {
-                            if (!this.Key_Left) {
-                                this.sendKeyDownEvent(this.KeyMappings.Mapping_Left);
-                            }
-                        }
-                        else {
-                            if (this.Key_Left) {
-                                this.sendKeyUpEvent(this.KeyMappings.Mapping_Left);
-                            }
-                        }
-                        if (horiz_axis > .5) {
-                            if (!this.Key_Right) {
-                                this.sendKeyDownEvent(this.KeyMappings.Mapping_Right);
-                            }
-                        }
-                        else {
-                            if (this.Key_Right) {
-                                this.sendKeyUpEvent(this.KeyMappings.Mapping_Right);
-                            }
-                        }
-                        if (vertical_axis > .5) {
-                            if (!this.Key_Down) {
-                                this.sendKeyDownEvent(this.KeyMappings.Mapping_Down);
-                            }
-                        }
-                        else {
-                            if (this.Key_Down) {
-                                this.sendKeyUpEvent(this.KeyMappings.Mapping_Down);
-                            }
-                        }
-                        if (vertical_axis < -.5) {
-                            if (!this.Key_Up) {
-                                this.sendKeyDownEvent(this.KeyMappings.Mapping_Up);
-                            }
-                        }
-                        else {
-                            if (this.Key_Up) {
-                                this.sendKeyUpEvent(this.KeyMappings.Mapping_Up);
-                            }
+                else {
+                    if (this[stateName]) {
+                        this.sendKeyUpEvent(mappedKey);
+                    }
+                }
+            };
+
+            for (let i = 0; i < gp.buttons.length; i++) {
+                if (this.DebugKeycodes && gp.buttons[i].pressed) {
+                    console.log(i);
+                }
+                if (gp.buttons[i].pressed)
+                    this.Joy_Last = i;
+            }
+
+            // D-pad / mapped digital buttons
+            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Left), 'Key_Left', 'Mapping_Left');
+            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Right), 'Key_Right', 'Mapping_Right');
+            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Up), 'Key_Up', 'Mapping_Up');
+            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Down), 'Key_Down', 'Mapping_Down');
+
+            // Core N64 buttons
+            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_A), 'Key_Action_A', 'Mapping_Action_A');
+            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_B), 'Key_Action_B', 'Mapping_Action_B');
+            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_Start), 'Key_Action_Start', 'Mapping_Action_Start');
+            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_Z), 'Key_Action_Z', 'Mapping_Action_Z');
+            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_L), 'Key_Action_L', 'Mapping_Action_L');
+            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_R), 'Key_Action_R', 'Mapping_Action_R');
+            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Menu), 'Key_Menu', 'Mapping_Menu');
+
+            // Optional C buttons
+            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_CUP), 'Key_Action_CUP', 'Mapping_Action_CUP');
+            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_CDOWN), 'Key_Action_CDOWN', 'Mapping_Action_CDOWN');
+            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_CLEFT), 'Key_Action_CLEFT', 'Mapping_Action_CLEFT');
+            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_CRIGHT), 'Key_Action_CRIGHT', 'Mapping_Action_CRIGHT');
+
+            // Analog axes
+            if (this.Gamepad_Process_Axis) {
+                try {
+                    let horiz_axis = gp.axes[0];
+                    let vertical_axis = gp.axes[1];
+                    if (horiz_axis < -.5) {
+                        if (!this.Key_Left) {
+                            this.sendKeyDownEvent(this.KeyMappings.Mapping_Left);
                         }
                     }
-                    catch (error) { }
+                    else {
+                        if (this.Key_Left && !isPressed(this.KeyMappings.Joy_Mapping_Left)) {
+                            this.sendKeyUpEvent(this.KeyMappings.Mapping_Left);
+                        }
+                    }
+                    if (horiz_axis > .5) {
+                        if (!this.Key_Right) {
+                            this.sendKeyDownEvent(this.KeyMappings.Mapping_Right);
+                        }
+                    }
+                    else {
+                        if (this.Key_Right && !isPressed(this.KeyMappings.Joy_Mapping_Right)) {
+                            this.sendKeyUpEvent(this.KeyMappings.Mapping_Right);
+                        }
+                    }
+                    if (vertical_axis > .5) {
+                        if (!this.Key_Down) {
+                            this.sendKeyDownEvent(this.KeyMappings.Mapping_Down);
+                        }
+                    }
+                    else {
+                        if (this.Key_Down && !isPressed(this.KeyMappings.Joy_Mapping_Down)) {
+                            this.sendKeyUpEvent(this.KeyMappings.Mapping_Down);
+                        }
+                    }
+                    if (vertical_axis < -.5) {
+                        if (!this.Key_Up) {
+                            this.sendKeyDownEvent(this.KeyMappings.Mapping_Up);
+                        }
+                    }
+                    else {
+                        if (this.Key_Up && !isPressed(this.KeyMappings.Joy_Mapping_Up)) {
+                            this.sendKeyUpEvent(this.KeyMappings.Mapping_Up);
+                        }
+                    }
                 }
+                catch (error) { }
             }
         }
         catch (_a) { }
