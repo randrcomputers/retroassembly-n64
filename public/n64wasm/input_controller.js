@@ -1,4 +1,3 @@
-
 class GamePadState {
 
     constructor(buttonNum, keyName) {
@@ -356,7 +355,7 @@ class InputController {
             Joy_Mapping_Down: 13,
             Joy_Mapping_Up: 12,
             Joy_Mapping_Action_A: 0,
-            Joy_Mapping_Action_B: 2,
+            Joy_Mapping_Action_B: 1,
             Joy_Mapping_Action_Start: 9,
             Joy_Mapping_Action_Z: 4,
             Joy_Mapping_Action_L: 6,
