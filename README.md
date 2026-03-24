@@ -16,6 +16,7 @@ The working build includes support for:
 - Proper **4:3** display
 - RetroAssembly ESC menu / overlay support
 - Focus handoff between gameplay and the RetroAssembly UI
+- An **F8 controller remap menu** for keyboard and gamepad input changes
 - Scrollbar and FPS overlay cleanup
 
 ## Features
@@ -41,6 +42,21 @@ The N64 display is shown in a centered **4:3** layout instead of being stretched
 ### RetroAssembly UI integration
 The RetroAssembly overlay and ESC menu work correctly with N64 gameplay.
 
+### F8 controller remap menu
+Press **F8** during gameplay to open the N64Wasm input remap menu.
+
+This menu supports remapping both:
+
+- keyboard controls
+- gamepad/controller controls
+
+Current behavior includes:
+
+- the F8 menu can be opened during gameplay
+- keyboard remapping works from inside the menu
+- gamepad remapping works from inside the menu
+
+
 ## ROM Format
 
 Nintendo 64 ROMs should be provided as **unzipped `.z64` files**.
@@ -57,6 +73,10 @@ Current working behavior includes:
 - N64 games launch correctly
 - ROMs load correctly when provided as unzipped `.z64` files
 - The RetroAssembly ESC menu opens correctly
+- The **F8** remap menu opens correctly
+- Keyboard remapping works
+- Gamepad remapping works
+- The F8 menu captures controller input instead of passing it through to the running game
 - Save states work
 - Load states work
 - **Continue** loads the selected save state
@@ -98,6 +118,7 @@ This implementation was tested with a working N64 integration that includes:
 
 - startup state handoff for **Continue**
 - stable overlay focus behavior
+- working F8 remap menu behavior for keyboard and gamepad input
 - thumbnail capture support
 - N64-specific layout fixes for proper presentation
 
