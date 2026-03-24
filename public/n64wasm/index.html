@@ -159,6 +159,30 @@
             width: 100% !important;
         }
 
+		#buttonsModal .modal-dialog {
+		    max-width: 560px;
+		    margin: 1.75rem auto;
+		}
+		
+		#buttonsModal .modal-content {
+		    max-height: 90vh;
+		}
+		
+		#buttonsModal #modalMain {
+		    max-height: 72vh;
+		    overflow-y: auto;
+		    overscroll-behavior: contain;
+		    -webkit-overflow-scrolling: touch;
+		}
+
+		#buttonsModal:focus,
+		#buttonsModal .modal-body:focus,
+		#buttonsModal button:focus,
+		#buttonsModal input:focus,
+		#buttonsModal select:focus {
+		    outline: none;
+		}
+
     </style>
 </head>
 
@@ -1113,6 +1137,107 @@
             </div>
         </div>
     </div>
+
+	<script>
+	document.addEventListener('DOMContentLoaded', function () {
+	    var buttonsModal = document.getElementById('buttonsModal');
+	    var modalMain = document.getElementById('modalMain');
+	    if (!buttonsModal || !modalMain) return;
+	
+	    function eatScroll(e) {
+	        e.preventDefault();
+	        e.stopPropagation();
+	
+	        var delta = 0;
+	
+	        if (typeof e.deltaY === 'number') {
+	            delta = e.deltaY;
+	        } else if (typeof e.wheelDelta === 'number') {
+	            delta = -e.wheelDelta;
+	        } else if (e.touches && e.touches.length === 1) {
+	            if (modalMain._lastTouchY == null) {
+	                modalMain._lastTouchY = e.touches[0].clientY;
+	                return;
+	            }
+	            delta = modalMain._lastTouchY - e.touches[0].clientY;
+	            modalMain._lastTouchY = e.touches[0].clientY;
+	        }
+	
+	        modalMain.scrollTop += delta;
+	    }
+	
+	    buttonsModal.addEventListener('wheel', eatScroll, { passive: false, capture: true });
+	    modalMain.addEventListener('wheel', eatScroll, { passive: false, capture: true });
+	
+	    buttonsModal.addEventListener('touchmove', eatScroll, { passive: false, capture: true });
+	    modalMain.addEventListener('touchmove', eatScroll, { passive: false, capture: true });
+	
+	    buttonsModal.addEventListener('touchstart', function (e) {
+	        if (e.touches && e.touches.length === 1) {
+	            modalMain._lastTouchY = e.touches[0].clientY;
+	        }
+	    }, { passive: true, capture: true });
+	
+	    modalMain.addEventListener('touchstart', function (e) {
+	        if (e.touches && e.touches.length === 1) {
+	            modalMain._lastTouchY = e.touches[0].clientY;
+	        }
+	    }, { passive: true, capture: true });
+	
+	    buttonsModal.addEventListener('touchend', function () {
+	        modalMain._lastTouchY = null;
+	    }, { passive: true, capture: true });
+	
+	    modalMain.addEventListener('touchend', function () {
+	        modalMain._lastTouchY = null;
+	    }, { passive: true, capture: true });
+	});
+	</script>
+
+	<script>
+	document.addEventListener('DOMContentLoaded', function () {
+	    var buttonsModal = document.getElementById('buttonsModal');
+	    if (!buttonsModal) return;
+
+	    function focusButtonsModal() {
+	        buttonsModal.setAttribute('tabindex', '-1');
+	        try {
+	            buttonsModal.focus({ preventScroll: true });
+	        } catch (e) {
+	            try { buttonsModal.focus(); } catch (e2) {}
+	        }
+
+	        var firstBtn = buttonsModal.querySelector('[data-remap-focus], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])');
+	        if (firstBtn) {
+	            try {
+	                firstBtn.focus({ preventScroll: true });
+	            } catch (e) {
+	                try { firstBtn.focus(); } catch (e2) {}
+	            }
+	        }
+	    }
+	
+	    buttonsModal.addEventListener('shown.bs.modal', function () {
+	        try {
+	            if (document.exitPointerLock) {
+	                document.exitPointerLock();
+	            }
+	        } catch (e) {}
+	
+	        focusButtonsModal();
+	        setTimeout(focusButtonsModal, 0);
+	        setTimeout(focusButtonsModal, 60);
+	    });
+
+	    buttonsModal.addEventListener('hidden.bs.modal', function () {
+	        if (window.myClass && typeof window.myClass.focusCanvas === 'function') {
+	            setTimeout(function () {
+	                window.myClass.focusCanvas(true);
+	            }, 0);
+	        }
+	    });
+	});
+	</script>
 
     <script src="settings.js?v=1"></script>
     <script src="romlist.js"></script>

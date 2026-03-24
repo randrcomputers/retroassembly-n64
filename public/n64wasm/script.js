@@ -165,6 +165,7 @@ class MyClass {
         }
 
         this.installFocusGuards();
+        this.installRemapModalHandlers();
         this.scheduleAutoStart();
         
     }
@@ -316,6 +317,10 @@ class MyClass {
 
 
     focusCanvas(force = false) {
+        if (!force && this.isRemapModalOpen()) {
+            return;
+        }
+
         if (this._focusingCanvas) {
             return;
         }
@@ -400,6 +405,76 @@ class MyClass {
         document.addEventListener('fullscreenchange', () => {
             setTimeout(() => this.focusCanvas(), 0);
         }, true);
+    }
+
+    isRemapModalOpen() {
+        const buttonsModal = document.getElementById('buttonsModal');
+        return !!(buttonsModal && buttonsModal.classList.contains('show'));
+    }
+
+    focusRemapModal() {
+        const buttonsModal = document.getElementById('buttonsModal');
+        if (!buttonsModal) {
+            return;
+        }
+
+        const firstTarget = buttonsModal.querySelector('[data-remap-focus], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])');
+
+        try {
+            buttonsModal.setAttribute('tabindex', '-1');
+            buttonsModal.focus({ preventScroll: true });
+        } catch (error) {
+            try { buttonsModal.focus(); } catch (error2) {}
+        }
+
+        if (firstTarget && typeof firstTarget.focus === 'function') {
+            try {
+                firstTarget.focus({ preventScroll: true });
+            } catch (error) {
+                try { firstTarget.focus(); } catch (error2) {}
+            }
+        }
+    }
+
+    installRemapModalHandlers() {
+        if (this.remapModalHandlersInstalled) {
+            return;
+        }
+        this.remapModalHandlersInstalled = true;
+
+        const buttonsModal = document.getElementById('buttonsModal');
+        if (!buttonsModal) {
+            return;
+        }
+
+        const releaseInputs = () => {
+            try {
+                this.rivetsData.inputController?.clearAllInputs?.();
+            } catch (error) {}
+        };
+
+        buttonsModal.addEventListener('shown.bs.modal', () => {
+            this.remapModalOpen = true;
+
+            try {
+                if (document.exitPointerLock) {
+                    document.exitPointerLock();
+                }
+            } catch (error) {}
+
+            releaseInputs();
+            this.focusRemapModal();
+            setTimeout(() => this.focusRemapModal(), 0);
+            setTimeout(() => this.focusRemapModal(), 60);
+        });
+
+        buttonsModal.addEventListener('hidden.bs.modal', () => {
+            this.remapModalOpen = false;
+            this.rivetsData.remapWait = false;
+            this.rivetsData.inputController.Remap_Check = false;
+            releaseInputs();
+            setTimeout(() => this.focusCanvas(true), 0);
+        });
     }
 
     scheduleAutoStart() {
@@ -580,13 +655,21 @@ class MyClass {
     }
 
     inputLoop(){
-        myClass.rivetsData.inputController.update();
-        if (myClass.rivetsData.beforeEmulatorStarted)
-        {
+        if (!myClass || !myClass.rivetsData || !myClass.rivetsData.inputController) {
             setTimeout(() => {
                 myClass.inputLoop();
             }, 100);
+            return;
         }
+
+        myClass.rivetsData.inputController.update();
+
+        const modalOpen = typeof myClass.isRemapModalOpen === 'function' && myClass.isRemapModalOpen();
+        const nextDelay = modalOpen ? 16 : 50;
+
+        setTimeout(() => {
+            myClass.inputLoop();
+        }, nextDelay);
     }
 
 
@@ -1828,12 +1911,26 @@ class MyClass {
                 myClass.inputLoop();
             }, 100);
         }
-        
+
         if (this.rivetsData.inputController.Gamepad_Process_Axis)
             this.rivetsData.chkUseJoypad = true;
         this.rivetsData.remappings = JSON.parse(JSON.stringify(this.rivetsData.inputController.KeyMappings));
         this.rivetsData.remapWait = false;
-        $("#buttonsModal").modal();
+        this.rivetsData.inputController.clearAllInputs?.();
+
+        if (this.isRemapModalOpen()) {
+            this.focusRemapModal();
+            return;
+        }
+
+        $("#buttonsModal").modal({
+            backdrop: 'static',
+            keyboard: false,
+            focus: true,
+            show: true
+        });
+
+        setTimeout(() => this.focusRemapModal(), 0);
     }
 
     addCheat(){

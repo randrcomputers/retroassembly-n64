@@ -386,121 +386,168 @@ class InputController {
         console.log("Gamepad connected at index %d: %s. %d buttons, %d axes.", e.gamepad.index, e.gamepad.id, e.gamepad.buttons.length, e.gamepad.axes.length);
     }
 
-    processGamepad() {
-        try {
-            var gamepads = navigator.getGamepads ? navigator.getGamepads() : (navigator.webkitGetGamepads ? navigator.webkitGetGamepads() : []);
-            if (!gamepads)
-                return;
-            var gp = null;
-            for (let i = 0; i < gamepads.length; i++) {
-                if (gamepads[i] && gamepads[i].buttons && gamepads[i].buttons.length > 0) {
-                    gp = gamepads[i];
-                    break;
-                }
-            }
-            if (!gp)
-                return;
+	isRemapModalOpen() {
+	    const buttonsModal = document.getElementById('buttonsModal');
+	    return !!(buttonsModal && buttonsModal.classList.contains('show'));
+	}
 
-            const isPressed = (btnIndex) => {
-                return btnIndex != null && btnIndex >= 0 && gp.buttons[btnIndex] && gp.buttons[btnIndex].pressed;
-            };
+	clearAllInputs() {
+	    this.Key_Up = false;
+	    this.Key_Down = false;
+	    this.Key_Left = false;
+	    this.Key_Right = false;
+	    this.Key_Action_Start = false;
+	    this.Key_Action_CUP = false;
+	    this.Key_Action_CDOWN = false;
+	    this.Key_Action_CLEFT = false;
+	    this.Key_Action_CRIGHT = false;
+	    this.Key_Action_B = false;
+	    this.Key_Action_Z = false;
+	    this.Key_Action_L = false;
+	    this.Key_Action_R = false;
+	    this.Key_Action_A = false;
+	    this.Key_Menu = false;
+	    this.Key_Last = '';
+	    this.Joy_Last = null;
+	}
 
-            const syncButton = (pressed, stateName, mappingKey) => {
-                const mappedKey = this.KeyMappings[mappingKey];
-                if (!mappedKey)
-                    return;
-                if (pressed) {
-                    if (!this[stateName]) {
-                        this.sendKeyDownEvent(mappedKey);
-                    }
-                }
-                else {
-                    if (this[stateName]) {
-                        this.sendKeyUpEvent(mappedKey);
-                    }
-                }
-            };
-
-            for (let i = 0; i < gp.buttons.length; i++) {
-                if (this.DebugKeycodes && gp.buttons[i].pressed) {
-                    console.log(i);
-                }
-                if (gp.buttons[i].pressed)
-                    this.Joy_Last = i;
-            }
-
-            // D-pad / mapped digital buttons
-            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Left), 'Key_Left', 'Mapping_Left');
-            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Right), 'Key_Right', 'Mapping_Right');
-            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Up), 'Key_Up', 'Mapping_Up');
-            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Down), 'Key_Down', 'Mapping_Down');
-
-            // Core N64 buttons
-            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_A), 'Key_Action_A', 'Mapping_Action_A');
-            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_B), 'Key_Action_B', 'Mapping_Action_B');
-            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_Start), 'Key_Action_Start', 'Mapping_Action_Start');
-            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_Z), 'Key_Action_Z', 'Mapping_Action_Z');
-            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_L), 'Key_Action_L', 'Mapping_Action_L');
-            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_R), 'Key_Action_R', 'Mapping_Action_R');
-            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Menu), 'Key_Menu', 'Mapping_Menu');
-
-            // Optional C buttons
-            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_CUP), 'Key_Action_CUP', 'Mapping_Action_CUP');
-            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_CDOWN), 'Key_Action_CDOWN', 'Mapping_Action_CDOWN');
-            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_CLEFT), 'Key_Action_CLEFT', 'Mapping_Action_CLEFT');
-            syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_CRIGHT), 'Key_Action_CRIGHT', 'Mapping_Action_CRIGHT');
-
-            // Analog axes
-            if (this.Gamepad_Process_Axis) {
-                try {
-                    let horiz_axis = gp.axes[0];
-                    let vertical_axis = gp.axes[1];
-                    if (horiz_axis < -.5) {
-                        if (!this.Key_Left) {
-                            this.sendKeyDownEvent(this.KeyMappings.Mapping_Left);
-                        }
-                    }
-                    else {
-                        if (this.Key_Left && !isPressed(this.KeyMappings.Joy_Mapping_Left)) {
-                            this.sendKeyUpEvent(this.KeyMappings.Mapping_Left);
-                        }
-                    }
-                    if (horiz_axis > .5) {
-                        if (!this.Key_Right) {
-                            this.sendKeyDownEvent(this.KeyMappings.Mapping_Right);
-                        }
-                    }
-                    else {
-                        if (this.Key_Right && !isPressed(this.KeyMappings.Joy_Mapping_Right)) {
-                            this.sendKeyUpEvent(this.KeyMappings.Mapping_Right);
-                        }
-                    }
-                    if (vertical_axis > .5) {
-                        if (!this.Key_Down) {
-                            this.sendKeyDownEvent(this.KeyMappings.Mapping_Down);
-                        }
-                    }
-                    else {
-                        if (this.Key_Down && !isPressed(this.KeyMappings.Joy_Mapping_Down)) {
-                            this.sendKeyUpEvent(this.KeyMappings.Mapping_Down);
-                        }
-                    }
-                    if (vertical_axis < -.5) {
-                        if (!this.Key_Up) {
-                            this.sendKeyDownEvent(this.KeyMappings.Mapping_Up);
-                        }
-                    }
-                    else {
-                        if (this.Key_Up && !isPressed(this.KeyMappings.Joy_Mapping_Up)) {
-                            this.sendKeyUpEvent(this.KeyMappings.Mapping_Up);
-                        }
-                    }
-                }
-                catch (error) { }
-            }
-        }
-        catch (_a) { }
-    }
+	processGamepad() {
+	    try {
+	        var gamepads = navigator.getGamepads ? navigator.getGamepads() : (navigator.webkitGetGamepads ? navigator.webkitGetGamepads() : []);
+	        if (!gamepads)
+	            return;
+	
+	        var gp = null;
+	        for (let i = 0; i < gamepads.length; i++) {
+	            if (gamepads[i] && gamepads[i].buttons && gamepads[i].buttons.length > 0) {
+	                gp = gamepads[i];
+	                break;
+	            }
+	        }
+	        if (!gp)
+	            return;
+	
+	        const modalOpen = this.isRemapModalOpen();
+	        if (modalOpen && !this.Remap_Check) {
+	            this.clearAllInputs();
+	            return;
+	        }
+	
+	        const isPressed = (btnIndex) => {
+	            return btnIndex != null && btnIndex >= 0 && gp.buttons[btnIndex] && gp.buttons[btnIndex].pressed;
+	        };
+	
+	        const syncButton = (pressed, stateName, mappingKey) => {
+	            const mappedKey = this.KeyMappings[mappingKey];
+	            if (!mappedKey)
+	                return;
+	
+	            if (pressed) {
+	                if (!this[stateName]) {
+	                    this.sendKeyDownEvent(mappedKey);
+	                }
+	            }
+	            else {
+	                if (this[stateName]) {
+	                    this.sendKeyUpEvent(mappedKey);
+	                }
+	            }
+	        };
+	
+	        for (let i = 0; i < gp.buttons.length; i++) {
+	            if (this.DebugKeycodes && gp.buttons[i].pressed) {
+	                console.log(i);
+	            }
+	
+	            if (gp.buttons[i].pressed) {
+	                this.Joy_Last = i;
+	
+	                if (this.Remap_Check) {
+	                    if (window["myApp"] && typeof window["myApp"].remapPressed === "function") {
+	                        window["myApp"].remapPressed(i, false);
+	                    }
+	                    this.Remap_Check = false;
+	                    return;
+	                }
+	            }
+	        }
+	
+	        // D-pad / mapped digital buttons
+	        syncButton(isPressed(this.KeyMappings.Joy_Mapping_Left), 'Key_Left', 'Mapping_Left');
+	        syncButton(isPressed(this.KeyMappings.Joy_Mapping_Right), 'Key_Right', 'Mapping_Right');
+	        syncButton(isPressed(this.KeyMappings.Joy_Mapping_Up), 'Key_Up', 'Mapping_Up');
+	        syncButton(isPressed(this.KeyMappings.Joy_Mapping_Down), 'Key_Down', 'Mapping_Down');
+	
+	        // Core N64 buttons
+	        syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_A), 'Key_Action_A', 'Mapping_Action_A');
+	        syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_B), 'Key_Action_B', 'Mapping_Action_B');
+	        syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_Start), 'Key_Action_Start', 'Mapping_Action_Start');
+	        syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_Z), 'Key_Action_Z', 'Mapping_Action_Z');
+	        syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_L), 'Key_Action_L', 'Mapping_Action_L');
+	        syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_R), 'Key_Action_R', 'Mapping_Action_R');
+	        syncButton(isPressed(this.KeyMappings.Joy_Mapping_Menu), 'Key_Menu', 'Mapping_Menu');
+	
+	        // Optional C buttons
+	        syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_CUP), 'Key_Action_CUP', 'Mapping_Action_CUP');
+	        syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_CDOWN), 'Key_Action_CDOWN', 'Mapping_Action_CDOWN');
+	        syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_CLEFT), 'Key_Action_CLEFT', 'Mapping_Action_CLEFT');
+	        syncButton(isPressed(this.KeyMappings.Joy_Mapping_Action_CRIGHT), 'Key_Action_CRIGHT', 'Mapping_Action_CRIGHT');
+	
+	        // Analog axes
+	        if (this.Gamepad_Process_Axis) {
+	            try {
+	                let horiz_axis = gp.axes[0];
+	                let vertical_axis = gp.axes[1];
+	
+	                if (horiz_axis < -.5) {
+	                    if (!this.Key_Left) {
+	                        this.sendKeyDownEvent(this.KeyMappings.Mapping_Left);
+	                    }
+	                }
+	                else {
+	                    if (this.Key_Left && !isPressed(this.KeyMappings.Joy_Mapping_Left)) {
+	                        this.sendKeyUpEvent(this.KeyMappings.Mapping_Left);
+	                    }
+	                }
+	
+	                if (horiz_axis > .5) {
+	                    if (!this.Key_Right) {
+	                        this.sendKeyDownEvent(this.KeyMappings.Mapping_Right);
+	                    }
+	                }
+	                else {
+	                    if (this.Key_Right && !isPressed(this.KeyMappings.Joy_Mapping_Right)) {
+	                        this.sendKeyUpEvent(this.KeyMappings.Mapping_Right);
+	                    }
+	                }
+	
+	                if (vertical_axis > .5) {
+	                    if (!this.Key_Down) {
+	                        this.sendKeyDownEvent(this.KeyMappings.Mapping_Down);
+	                    }
+	                }
+	                else {
+	                    if (this.Key_Down && !isPressed(this.KeyMappings.Joy_Mapping_Down)) {
+	                        this.sendKeyUpEvent(this.KeyMappings.Mapping_Down);
+	                    }
+	                }
+	
+	                if (vertical_axis < -.5) {
+	                    if (!this.Key_Up) {
+	                        this.sendKeyDownEvent(this.KeyMappings.Mapping_Up);
+	                    }
+	                }
+	                else {
+	                    if (this.Key_Up && !isPressed(this.KeyMappings.Joy_Mapping_Up)) {
+	                        this.sendKeyUpEvent(this.KeyMappings.Mapping_Up);
+	                    }
+	                }
+	            }
+	            catch (error) { }
+	        }
+	    }
+	    catch (_a) { }
+	}
 
     sendKeyDownEvent(key) {
         let keyEvent = new KeyboardEvent('Gamepad Event Down', { key: key });
@@ -512,144 +559,188 @@ class InputController {
         this.keyUp(keyEvent);
     }
 
-    keyDown(event) {
-        let input_controller = this;
-        input_controller.Key_Last = event.key;
-        if (input_controller.DebugKeycodes)
-            console.log(event);
-        
-        //handle certain keyboards that use Left instead of ArrowLeft
-        if (event.key == 'Left' && input_controller.KeyMappings.Mapping_Left == 'ArrowLeft')
-            event = new KeyboardEvent('', { key: 'ArrowLeft' });
-        if (event.key == 'Right' && input_controller.KeyMappings.Mapping_Right == 'ArrowRight')
-            event = new KeyboardEvent('', { key: 'ArrowRight' });
-        if (event.key == 'Up' && input_controller.KeyMappings.Mapping_Up == 'ArrowUp')
-            event = new KeyboardEvent('', { key: 'ArrowUp' });
-        if (event.key == 'Down' && input_controller.KeyMappings.Mapping_Down == 'ArrowDown')
-            event = new KeyboardEvent('', { key: 'ArrowDown' });
-        let arrowkey = false;
-
-        //player 1
-        if (event.key == input_controller.KeyMappings.Mapping_Down) {
-            input_controller.Key_Down = true;
-            arrowkey = true;
-        }
-        if (event.key == input_controller.KeyMappings.Mapping_Up) {
-            input_controller.Key_Up = true;
-            arrowkey = true;
-        }
-        if (event.key == input_controller.KeyMappings.Mapping_Left) {
-            input_controller.Key_Left = true;
-            arrowkey = true;
-        }
-        if (event.key == input_controller.KeyMappings.Mapping_Right) {
-            input_controller.Key_Right = true;
-            arrowkey = true;
-        }
-        if (event.key == input_controller.KeyMappings.Mapping_Action_Start) {
-            input_controller.Key_Action_Start = true;
-        }
-        if (event.key == input_controller.KeyMappings.Mapping_Action_CUP) {
-            input_controller.Key_Action_CUP = true;
-        }
-        if (event.key == input_controller.KeyMappings.Mapping_Action_CDOWN) {
-            input_controller.Key_Action_CDOWN = true;
-        }
-        if (event.key == input_controller.KeyMappings.Mapping_Action_CLEFT) {
-            input_controller.Key_Action_CLEFT = true;
-        }
-        if (event.key == input_controller.KeyMappings.Mapping_Action_CRIGHT) {
-            input_controller.Key_Action_CRIGHT = true;
-        }
-        if (event.key == input_controller.KeyMappings.Mapping_Action_B) {
-            input_controller.Key_Action_B = true;
-        }
-        if (event.key == input_controller.KeyMappings.Mapping_Action_Z) {
-            input_controller.Key_Action_Z = true;
-        }
-        if (event.key == input_controller.KeyMappings.Mapping_Action_L) {
-            input_controller.Key_Action_L = true;
-        }
-        if (event.key == input_controller.KeyMappings.Mapping_Action_R) {
-            input_controller.Key_Action_R = true;
-        }
-        if (event.key == input_controller.KeyMappings.Mapping_Action_A) {
-            input_controller.Key_Action_A = true;
-        }
-        if (event.key == input_controller.KeyMappings.Mapping_Menu) {
-            input_controller.Key_Menu = true;
-        }
-        
-    }
-
-    keyUp(event) {
-        let input_controller = this;
-        
-        //handle certain keyboards that use Left instead of ArrowLeft
-        if (event.key == 'Left' && input_controller.KeyMappings.Mapping_Left == 'ArrowLeft')
-            event = new KeyboardEvent('', { key: 'ArrowLeft' });
-        if (event.key == 'Right' && input_controller.KeyMappings.Mapping_Right == 'ArrowRight')
-            event = new KeyboardEvent('', { key: 'ArrowRight' });
-        if (event.key == 'Up' && input_controller.KeyMappings.Mapping_Up == 'ArrowUp')
-            event = new KeyboardEvent('', { key: 'ArrowUp' });
-        if (event.key == 'Down' && input_controller.KeyMappings.Mapping_Down == 'ArrowDown')
-            event = new KeyboardEvent('', { key: 'ArrowDown' });
-        
-        //player 1
-        if (event.key == input_controller.KeyMappings.Mapping_Down) {
-            input_controller.Key_Down = false;
-        }
-        if (event.key == input_controller.KeyMappings.Mapping_Up) {
-            input_controller.Key_Up = false;
-        }
-        if (event.key == input_controller.KeyMappings.Mapping_Left) {
-            input_controller.Key_Left = false;
-        }
-        if (event.key == input_controller.KeyMappings.Mapping_Right) {
-            input_controller.Key_Right = false;
-        }
-        if (event.key == input_controller.KeyMappings.Mapping_Action_Start) {
-            input_controller.Key_Action_Start = false;
-        }
-        if (event.key == input_controller.KeyMappings.Mapping_Action_CUP) {
-            input_controller.Key_Action_CUP = false;
-        }
-        if (event.key == input_controller.KeyMappings.Mapping_Action_CDOWN) {
-            input_controller.Key_Action_CDOWN = false;
-        }
-        if (event.key == input_controller.KeyMappings.Mapping_Action_CLEFT) {
-            input_controller.Key_Action_CLEFT = false;
-        }
-        if (event.key == input_controller.KeyMappings.Mapping_Action_CRIGHT) {
-            input_controller.Key_Action_CRIGHT = false;
-        }
-        if (event.key == input_controller.KeyMappings.Mapping_Action_B) {
-            input_controller.Key_Action_B = false;
-        }
-        if (event.key == input_controller.KeyMappings.Mapping_Action_Z) {
-            input_controller.Key_Action_Z = false;
-        }
-        if (event.key == input_controller.KeyMappings.Mapping_Action_L) {
-            input_controller.Key_Action_L = false;
-        }
-        if (event.key == input_controller.KeyMappings.Mapping_Action_R) {
-            input_controller.Key_Action_R = false;
-        }
-        if (event.key == input_controller.KeyMappings.Mapping_Action_A) {
-            input_controller.Key_Action_A = false;
-        }
-        if (event.key == input_controller.KeyMappings.Mapping_Menu) {
-            input_controller.Key_Menu = false;
-        }
-        
-    }
+	keyDown(event) {
+	    let input_controller = this;
+	    input_controller.Key_Last = event.key;
+	    
+		const buttonsModal = document.getElementById('buttonsModal');
+		const modalOpen = buttonsModal && buttonsModal.classList.contains('show');
+		
+		if (modalOpen && !input_controller.Remap_Check && event.key !== 'F8') {
+		    event.preventDefault();
+		    event.stopPropagation();
+		    return;
+		}	    
+	    
+	    
+	    if (input_controller.DebugKeycodes)
+	        console.log(event);
+	
+	    if (event.key === 'F8') {
+	        if (window["myApp"] && typeof window["myApp"].showRemapModal === "function") {
+	            window["myApp"].showRemapModal();
+	        }
+	        event.preventDefault();
+	        return;
+	    }
+	
+	    if (input_controller.Remap_Check) {
+	        if (window["myApp"] && typeof window["myApp"].remapPressed === "function") {
+	            window["myApp"].remapPressed(event.key, true);
+	        }
+	        event.preventDefault();
+	        return;
+	    }
+	
+	    //handle certain keyboards that use Left instead of ArrowLeft
+	    if (event.key == 'Left' && input_controller.KeyMappings.Mapping_Left == 'ArrowLeft')
+	        event = new KeyboardEvent('', { key: 'ArrowLeft' });
+	    if (event.key == 'Right' && input_controller.KeyMappings.Mapping_Right == 'ArrowRight')
+	        event = new KeyboardEvent('', { key: 'ArrowRight' });
+	    if (event.key == 'Up' && input_controller.KeyMappings.Mapping_Up == 'ArrowUp')
+	        event = new KeyboardEvent('', { key: 'ArrowUp' });
+	    if (event.key == 'Down' && input_controller.KeyMappings.Mapping_Down == 'ArrowDown')
+	        event = new KeyboardEvent('', { key: 'ArrowDown' });
+	    let arrowkey = false;
+	
+	    //player 1
+	    if (event.key == input_controller.KeyMappings.Mapping_Down) {
+	        input_controller.Key_Down = true;
+	        arrowkey = true;
+	    }
+	    if (event.key == input_controller.KeyMappings.Mapping_Up) {
+	        input_controller.Key_Up = true;
+	        arrowkey = true;
+	    }
+	    if (event.key == input_controller.KeyMappings.Mapping_Left) {
+	        input_controller.Key_Left = true;
+	        arrowkey = true;
+	    }
+	    if (event.key == input_controller.KeyMappings.Mapping_Right) {
+	        input_controller.Key_Right = true;
+	        arrowkey = true;
+	    }
+	    if (event.key == input_controller.KeyMappings.Mapping_Action_Start) {
+	        input_controller.Key_Action_Start = true;
+	    }
+	    if (event.key == input_controller.KeyMappings.Mapping_Action_CUP) {
+	        input_controller.Key_Action_CUP = true;
+	    }
+	    if (event.key == input_controller.KeyMappings.Mapping_Action_CDOWN) {
+	        input_controller.Key_Action_CDOWN = true;
+	    }
+	    if (event.key == input_controller.KeyMappings.Mapping_Action_CLEFT) {
+	        input_controller.Key_Action_CLEFT = true;
+	    }
+	    if (event.key == input_controller.KeyMappings.Mapping_Action_CRIGHT) {
+	        input_controller.Key_Action_CRIGHT = true;
+	    }
+	    if (event.key == input_controller.KeyMappings.Mapping_Action_B) {
+	        input_controller.Key_Action_B = true;
+	    }
+	    if (event.key == input_controller.KeyMappings.Mapping_Action_Z) {
+	        input_controller.Key_Action_Z = true;
+	    }
+	    if (event.key == input_controller.KeyMappings.Mapping_Action_L) {
+	        input_controller.Key_Action_L = true;
+	    }
+	    if (event.key == input_controller.KeyMappings.Mapping_Action_R) {
+	        input_controller.Key_Action_R = true;
+	    }
+	    if (event.key == input_controller.KeyMappings.Mapping_Action_A) {
+	        input_controller.Key_Action_A = true;
+	    }
+	    if (event.key == input_controller.KeyMappings.Mapping_Menu) {
+	        input_controller.Key_Menu = true;
+	    }
+	}
+	
+	keyUp(event) {
+	    let input_controller = this;
+	    
+		const buttonsModal = document.getElementById('buttonsModal');
+		const modalOpen = buttonsModal && buttonsModal.classList.contains('show');
+		
+		if (modalOpen && !input_controller.Remap_Check && event.key !== 'F8') {
+		    event.preventDefault();
+		    event.stopPropagation();
+		    return;
+		}	    
+	
+	    if (event.key === 'F8') {
+	        event.preventDefault();
+	        return;
+	    }
+	
+	    if (input_controller.Remap_Check) {
+	        event.preventDefault();
+	        return;
+	    }
+	
+	    //handle certain keyboards that use Left instead of ArrowLeft
+	    if (event.key == 'Left' && input_controller.KeyMappings.Mapping_Left == 'ArrowLeft')
+	        event = new KeyboardEvent('', { key: 'ArrowLeft' });
+	    if (event.key == 'Right' && input_controller.KeyMappings.Mapping_Right == 'ArrowRight')
+	        event = new KeyboardEvent('', { key: 'ArrowRight' });
+	    if (event.key == 'Up' && input_controller.KeyMappings.Mapping_Up == 'ArrowUp')
+	        event = new KeyboardEvent('', { key: 'ArrowUp' });
+	    if (event.key == 'Down' && input_controller.KeyMappings.Mapping_Down == 'ArrowDown')
+	        event = new KeyboardEvent('', { key: 'ArrowDown' });
+	
+	    //player 1
+	    if (event.key == input_controller.KeyMappings.Mapping_Down) {
+	        input_controller.Key_Down = false;
+	    }
+	    if (event.key == input_controller.KeyMappings.Mapping_Up) {
+	        input_controller.Key_Up = false;
+	    }
+	    if (event.key == input_controller.KeyMappings.Mapping_Left) {
+	        input_controller.Key_Left = false;
+	    }
+	    if (event.key == input_controller.KeyMappings.Mapping_Right) {
+	        input_controller.Key_Right = false;
+	    }
+	    if (event.key == input_controller.KeyMappings.Mapping_Action_Start) {
+	        input_controller.Key_Action_Start = false;
+	    }
+	    if (event.key == input_controller.KeyMappings.Mapping_Action_CUP) {
+	        input_controller.Key_Action_CUP = false;
+	    }
+	    if (event.key == input_controller.KeyMappings.Mapping_Action_CDOWN) {
+	        input_controller.Key_Action_CDOWN = false;
+	    }
+	    if (event.key == input_controller.KeyMappings.Mapping_Action_CLEFT) {
+	        input_controller.Key_Action_CLEFT = false;
+	    }
+	    if (event.key == input_controller.KeyMappings.Mapping_Action_CRIGHT) {
+	        input_controller.Key_Action_CRIGHT = false;
+	    }
+	    if (event.key == input_controller.KeyMappings.Mapping_Action_B) {
+	        input_controller.Key_Action_B = false;
+	    }
+	    if (event.key == input_controller.KeyMappings.Mapping_Action_Z) {
+	        input_controller.Key_Action_Z = false;
+	    }
+	    if (event.key == input_controller.KeyMappings.Mapping_Action_L) {
+	        input_controller.Key_Action_L = false;
+	    }
+	    if (event.key == input_controller.KeyMappings.Mapping_Action_R) {
+	        input_controller.Key_Action_R = false;
+	    }
+	    if (event.key == input_controller.KeyMappings.Mapping_Action_A) {
+	        input_controller.Key_Action_A = false;
+	    }
+	    if (event.key == input_controller.KeyMappings.Mapping_Menu) {
+	        input_controller.Key_Menu = false;
+	    }
+	}
 
     update() {
         this.processGamepad();
        
         //a hack - need to refactor
         if (this.Remap_Check) {
-            if (this.Key_Last != '' || this.Joy_Last) {
+            if (this.Key_Last !== '' || this.Joy_Last !== null) {
                 window["myApp"].remapPressed();
                 this.Remap_Check = false;
             }
