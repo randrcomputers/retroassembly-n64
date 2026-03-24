@@ -55,8 +55,8 @@ Current behavior includes:
 - the F8 menu can be opened during gameplay
 - keyboard remapping works from inside the menu
 - gamepad remapping works from inside the menu
-
-
+- restart game to load new mappings
+- remaps are stored in browser local storage
 ## ROM Format
 
 Nintendo 64 ROMs should be provided as **unzipped `.z64` files**.
