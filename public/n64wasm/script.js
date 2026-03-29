@@ -217,6 +217,13 @@ class MyClass {
             }
 
             this.applyEmbedCanvasLayout();
+
+            const mobileBottomPanel = document.getElementById('mobileBottomPanel');
+            const mobileButtons = document.getElementById('mobileButtons');
+            const menuDiv = document.getElementById('menuDiv');
+            if (mobileBottomPanel) mobileBottomPanel.style.display = 'none';
+            if (mobileButtons) mobileButtons.style.display = 'none';
+            if (menuDiv) menuDiv.style.display = 'none';
         } catch (error) {
             console.log('applyEmbedMode failed', error);
         }
@@ -248,6 +255,164 @@ class MyClass {
             console.log('applyEmbedCanvasLayout failed', error);
         }
     }
+
+
+    getInputController(){
+        return this.rivetsData?.inputController || null;
+    }
+
+    getBridgeMappedKey(buttonName){
+        const inputController = this.getInputController();
+        const mappings = inputController?.KeyMappings;
+        if (!mappings) {
+            return null;
+        }
+
+        switch ((buttonName || '').toLowerCase()) {
+            case 'up':
+                return mappings.Mapping_Up;
+            case 'down':
+                return mappings.Mapping_Down;
+            case 'left':
+                return mappings.Mapping_Left;
+            case 'right':
+                return mappings.Mapping_Right;
+            case 'a':
+                return mappings.Mapping_Action_A;
+            case 'b':
+                return mappings.Mapping_Action_B;
+            case 'x':
+                return mappings.Mapping_Action_CUP;
+            case 'y':
+                return mappings.Mapping_Action_CLEFT;
+            case 'start':
+                return mappings.Mapping_Action_Start;
+            case 'select':
+                return mappings.Mapping_Action_Z;
+            case 'l':
+            case 'l1':
+                return mappings.Mapping_Action_L;
+            case 'r':
+            case 'r1':
+                return mappings.Mapping_Action_R;
+            case 'l2':
+                return mappings.Mapping_Action_CDOWN;
+            case 'r2':
+                return mappings.Mapping_Action_CRIGHT;
+            case 'menu':
+                return mappings.Mapping_Menu;
+            default:
+                return null;
+        }
+    }
+
+
+    updateBridgeMobileVector(){
+        const inputController = this.getInputController();
+        if (!inputController) {
+            return;
+        }
+
+        let nextX = 0;
+        let nextY = 0;
+
+        if (inputController.Key_Left && !inputController.Key_Right) nextX = -1;
+        if (inputController.Key_Right && !inputController.Key_Left) nextX = 1;
+        if (inputController.Key_Up && !inputController.Key_Down) nextY = 1;
+        if (inputController.Key_Down && !inputController.Key_Up) nextY = -1;
+
+        inputController.VectorX = nextX;
+        inputController.VectorY = nextY;
+
+        try {
+            if (typeof inputController.updateMobileControls === 'function') {
+                inputController.updateMobileControls();
+            }
+        } catch (error) {
+            console.log('[RA N64] updateBridgeMobileVector failed', error);
+        }
+    }
+
+    setBridgeDirectionState(buttonName, pressed){
+        const inputController = this.getInputController();
+        if (!inputController) {
+            return false;
+        }
+
+        switch ((buttonName || '').toLowerCase()) {
+            case 'up':
+                inputController.Key_Up = pressed;
+                break;
+            case 'down':
+                inputController.Key_Down = pressed;
+                break;
+            case 'left':
+                inputController.Key_Left = pressed;
+                break;
+            case 'right':
+                inputController.Key_Right = pressed;
+                break;
+            default:
+                return false;
+        }
+
+        this.updateBridgeMobileVector();
+        return true;
+    }
+
+
+    bridgePressDown(buttonName){
+        const inputController = this.getInputController();
+        if (!inputController) {
+            this.focusCanvas(true);
+            return false;
+        }
+
+        if (this.setBridgeDirectionState(buttonName, true)) {
+            this.focusCanvas(true);
+            return true;
+        }
+
+        const mappedKey = this.getBridgeMappedKey(buttonName);
+        if (!mappedKey) {
+            this.focusCanvas(true);
+            return false;
+        }
+
+        try {
+            inputController.sendKeyDownEvent(mappedKey);
+            this.focusCanvas(true);
+            return true;
+        } catch (error) {
+            console.log('[RA N64] bridgePressDown failed', buttonName, error);
+            return false;
+        }
+    }
+
+    bridgePressUp(buttonName){
+        const inputController = this.getInputController();
+        if (!inputController) {
+            return false;
+        }
+
+        if (this.setBridgeDirectionState(buttonName, false)) {
+            return true;
+        }
+
+        const mappedKey = this.getBridgeMappedKey(buttonName);
+        if (!mappedKey) {
+            return false;
+        }
+
+        try {
+            inputController.sendKeyUpEvent(mappedKey);
+            return true;
+        } catch (error) {
+            console.log('[RA N64] bridgePressUp failed', buttonName, error);
+            return false;
+        }
+    }
+
 
     installBridge(){
         const self = this;
@@ -306,6 +471,9 @@ class MyClass {
             async screenshot() {
                 return await self.captureScreenshotFile();
             },
+            focusCanvas: () => self.focusCanvas(true),
+            pressDown: (buttonName) => self.bridgePressDown(buttonName),
+            pressUp: (buttonName) => self.bridgePressUp(buttonName),
             saveStateLocal: () => self.saveStateLocal(),
             loadStateLocal: () => self.loadStateLocal(),
         };
