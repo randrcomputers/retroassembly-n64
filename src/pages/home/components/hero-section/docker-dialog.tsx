@@ -1,0 +1,103 @@
+import { Button, Dialog, Tabs, VisuallyHidden } from '@radix-ui/themes'
+import { useTranslation } from 'react-i18next'
+import { metadata } from '#@/constants/metadata.ts'
+import { DialogRoot } from '#@/pages/library/components/dialog-root.tsx'
+import { CodeBlock } from './code-block.tsx'
+
+const composeYaml = `services:
+  retroassembly:
+    image: arianrhodsandlot/retroassembly
+    ports: [8000:8000]
+    volumes: [./data:/app/data]
+    restart: unless-stopped`
+
+const dockerCommand = String.raw`docker run -d \
+  --name retroassembly \
+  -p 8000:8000 \
+  -v /path/to/your/data:/app/data \
+  arianrhodsandlot/retroassembly`
+
+export function DockerDialog({ onOpenChange, ...props }: Readonly<Dialog.RootProps>) {
+  const { t } = useTranslation()
+
+  function handleOpenChange(open: boolean) {
+    onOpenChange?.(open)
+  }
+
+  return (
+    <DialogRoot {...props} onOpenChange={handleOpenChange}>
+      <Dialog.Content aria-describedby={undefined} width='600px'>
+        <VisuallyHidden>
+          <Dialog.Title>{t('home.selfHostingTitle')}</Dialog.Title>
+        </VisuallyHidden>
+
+        <div>
+          <Tabs.Root defaultValue='compose'>
+            <Tabs.List>
+              <Tabs.Trigger value='compose'>{t('home.dockerComposeTitle')}</Tabs.Trigger>
+              <Tabs.Trigger value='cli'>{t('home.dockerCliTitle')}</Tabs.Trigger>
+            </Tabs.List>
+
+            <Tabs.Content className='mt-4' value='compose'>
+              <div className='flex flex-col gap-4'>
+                <div>
+                  <h3 className='mb-2 font-semibold'>{t('home.dockerStep1')}</h3>
+                  <CodeBlock className='overflow-x-auto rounded bg-(--gray-3) p-4 text-sm' code={composeYaml} />
+                  {t('home.dockerDownloadCommand')}
+                  <CodeBlock
+                    className='overflow-x-auto rounded bg-(--gray-3) p-4 text-sm'
+                    code={`curl -O ${new URL('/compose.yaml', metadata.link).href}`}
+                  />
+                </div>
+
+                <div>
+                  <h3 className='mb-2 font-semibold'>{t('home.dockerStep2')}</h3>
+                  <CodeBlock
+                    className='overflow-x-auto rounded bg-(--gray-3) p-4 text-sm'
+                    code='docker compose up -d'
+                  />
+                </div>
+              </div>
+            </Tabs.Content>
+
+            <Tabs.Content className='mt-4' value='cli'>
+              <div className='flex flex-col gap-4'>
+                <div>
+                  <h3 className='mb-2 font-semibold'>{t('home.runWithDockerCli')}</h3>
+                  <CodeBlock className='overflow-x-auto rounded bg-(--gray-3) p-4 text-sm' code={dockerCommand} />
+                </div>
+
+                <div>
+                  <h3 className='mb-2 font-semibold'>{t('auth.accessApplication')}</h3>
+                  <p className='text-sm text-(--gray-11)'>{t('home.dockerInstructionsOpenBrowser')}</p>
+                </div>
+              </div>
+            </Tabs.Content>
+          </Tabs.Root>
+        </div>
+
+        <hr className='my-4 border-(--gray-3)' />
+
+        <div>
+          <a
+            className='inline-flex items-center gap-1 text-sm text-(--accent-9)'
+            href='https://hub.docker.com/r/arianrhodsandlot/retroassembly'
+            rel='noreferrer noopener'
+            target='_blank'
+          >
+            <span className='icon-[mdi--docker] text-lg' />
+            {t('home.viewOnDockerHub')}
+          </a>
+        </div>
+
+        <div className='absolute top-6 right-6'>
+          <Dialog.Close>
+            <Button variant='ghost'>
+              <span className='icon-[mdi--close] size-5' />
+            </Button>
+          </Dialog.Close>
+        </div>
+      </Dialog.Content>
+    </DialogRoot>
+  )
+}
