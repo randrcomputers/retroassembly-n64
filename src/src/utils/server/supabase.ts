@@ -1,0 +1,37 @@
+import { type CookieOptions, createServerClient, parseCookieHeader } from '@supabase/ssr'
+import { getContext } from 'hono/context-storage'
+import { setCookie } from 'hono/cookie'
+import { getRunTimeEnv } from '#@/constants/env.ts'
+
+declare module 'hono' {
+  interface ContextVariableMap {
+    cookiesToSet: {
+      name: string
+      options: CookieOptions
+      value: string
+    }[]
+  }
+}
+
+export function createSupabase() {
+  const c = getContext()
+  const { RETROASSEMBLY_RUN_TIME_SUPABASE_ANON_KEY, RETROASSEMBLY_RUN_TIME_SUPABASE_URL } = getRunTimeEnv()
+  if (RETROASSEMBLY_RUN_TIME_SUPABASE_ANON_KEY && RETROASSEMBLY_RUN_TIME_SUPABASE_URL) {
+    return createServerClient(RETROASSEMBLY_RUN_TIME_SUPABASE_URL, RETROASSEMBLY_RUN_TIME_SUPABASE_ANON_KEY, {
+      cookies: {
+        getAll() {
+          const cookieHeader = c.req.header('Cookie') ?? ''
+          const cookies = parseCookieHeader(cookieHeader) as { name: string; value: string }[]
+          return cookies
+        },
+
+        setAll(cookiesToSet) {
+          for (const cookie of cookiesToSet) {
+            // @ts-expect-error types from hono and supabase are not compatible
+            setCookie(c, cookie.name, cookie.value, cookie.options)
+          }
+        },
+      },
+    })
+  }
+}
