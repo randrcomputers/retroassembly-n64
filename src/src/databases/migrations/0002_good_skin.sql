@@ -1,1 +1,0 @@
-ALTER TABLE `roms` ADD `raw_game_metadata` text;
